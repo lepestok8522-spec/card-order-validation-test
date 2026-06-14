@@ -26,6 +26,8 @@ public class CardValidationTest {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--disable-dev-shm-usage", "--no-sandbox", "--headless");
         driver = new ChromeDriver(options);
+        // Открытие страницы вынесено в предусловие
+        driver.get("http://localhost:9999");
     }
 
     @AfterEach
@@ -35,55 +37,58 @@ public class CardValidationTest {
 
     @Test
     void shouldShowErrorForInvalidName() {
-        driver.get("http://localhost:9999");
-
+        // Невалидное имя (латиница)
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Ivan Petrov");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("+79231234567");
         driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
         driver.findElement(By.cssSelector("button.button")).click();
 
-        WebElement nameBlock = driver.findElement(By.cssSelector("[data-test-id='name']"));
-        WebElement errorMessage = nameBlock.findElement(By.cssSelector(".input__sub"));
+        // Поиск сообщения об ошибке по комбинированному селектору
+        WebElement errorMessage = driver.findElement(By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
 
         assertTrue(errorMessage.isDisplayed());
         assertEquals("Имя и Фамилия указаные неверно. Допустимы только русские буквы, пробелы и дефисы.",
                 errorMessage.getText().trim());
-
-        String blockClass = nameBlock.getAttribute("class");
-        assertTrue(blockClass.contains("input_invalid"));
     }
 
     @Test
     void shouldShowErrorForInvalidPhone() {
-        driver.get("http://localhost:9999");
-
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Иванов Иван");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("+7923");
         driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
         driver.findElement(By.cssSelector("button.button")).click();
 
-        WebElement phoneBlock = driver.findElement(By.cssSelector("[data-test-id='phone']"));
-        WebElement errorMessage = phoneBlock.findElement(By.cssSelector(".input__sub"));
+        // Поиск сообщения об ошибке по комбинированному селектору
+        WebElement errorMessage = driver.findElement(By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
 
         assertTrue(errorMessage.isDisplayed());
         assertEquals("Телефон указан неверно. Должно быть 11 цифр, например, +79012345678.",
                 errorMessage.getText().trim());
-
-        String blockClass = phoneBlock.getAttribute("class");
-        assertTrue(blockClass.contains("input_invalid"));
     }
 
     @Test
     void shouldShowErrorForEmptyName() {
-        driver.get("http://localhost:9999");
-
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("+79231234567");
         driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
         driver.findElement(By.cssSelector("button.button")).click();
 
-        WebElement nameBlock = driver.findElement(By.cssSelector("[data-test-id='name']"));
-        WebElement errorMessage = nameBlock.findElement(By.cssSelector(".input__sub"));
+        // Поиск сообщения об ошибке по комбинированному селектору
+        WebElement errorMessage = driver.findElement(By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
+
+        assertTrue(errorMessage.isDisplayed());
+        assertEquals("Поле обязательно для заполнения", errorMessage.getText().trim());
+    }
+
+    @Test
+    void shouldShowErrorForEmptyPhone() {
+        driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Иванов Иван");
+        driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("");
+        driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
+        driver.findElement(By.cssSelector("button.button")).click();
+
+        // Поиск сообщения об ошибке по комбинированному селектору
+        WebElement errorMessage = driver.findElement(By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
 
         assertTrue(errorMessage.isDisplayed());
         assertEquals("Поле обязательно для заполнения", errorMessage.getText().trim());
@@ -91,14 +96,13 @@ public class CardValidationTest {
 
     @Test
     void shouldShowErrorForUncheckedAgreement() {
-        driver.get("http://localhost:9999");
-
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Иванов Иван");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("+79231234567");
+        // чекбокс НЕ нажимаем
         driver.findElement(By.cssSelector("button.button")).click();
 
-        WebElement agreementBlock = driver.findElement(By.cssSelector("[data-test-id='agreement']"));
-        WebElement errorMessage = agreementBlock.findElement(By.cssSelector(".checkbox__text"));
+        // Для чекбокса комбинированный селектор с классом input_invalid
+        WebElement errorMessage = driver.findElement(By.cssSelector("[data-test-id='agreement'].input_invalid .checkbox__text"));
 
         assertTrue(errorMessage.isDisplayed());
         assertEquals("Я соглашаюсь с условиями обработки и использования моих персональных данных и разрешаю сделать запрос в бюро кредитных историй",
@@ -107,20 +111,26 @@ public class CardValidationTest {
 
     @Test
     void shouldHighlightOnlyFirstInvalidField() {
-        driver.get("http://localhost:9999");
-
+        // Оба поля невалидны
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Ivan Petrov");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("123");
         driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
         driver.findElement(By.cssSelector("button.button")).click();
 
-        WebElement nameBlock = driver.findElement(By.cssSelector("[data-test-id='name']"));
-        WebElement phoneBlock = driver.findElement(By.cssSelector("[data-test-id='phone']"));
+        // Проверяем, что сообщение об ошибке есть только у первого поля (имя)
+        WebElement nameErrorMessage = driver.findElement(By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
+        assertTrue(nameErrorMessage.isDisplayed());
 
-        String nameBlockClass = nameBlock.getAttribute("class");
-        String phoneBlockClass = phoneBlock.getAttribute("class");
+        // Проверяем, что у второго поля (телефон) нет сообщения об ошибке
+        // Ищем элемент с селектором для телефона, ожидаем, что его не существует
+        boolean phoneHasError;
+        try {
+            driver.findElement(By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
+            phoneHasError = true;
+        } catch (Exception e) {
+            phoneHasError = false;
+        }
 
-        assertTrue(nameBlockClass.contains("input_invalid"));
-        assertFalse(phoneBlockClass.contains("input_invalid"));
+        assertFalse(phoneHasError, "У телефона не должно быть сообщения об ошибке, так как ошибка только в первом поле");
     }
 }
