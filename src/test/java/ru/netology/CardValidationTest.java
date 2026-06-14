@@ -11,6 +11,8 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CardValidationTest {
@@ -111,26 +113,18 @@ public class CardValidationTest {
 
     @Test
     void shouldHighlightOnlyFirstInvalidField() {
-        // Оба поля невалидны
         driver.findElement(By.cssSelector("[data-test-id='name'] input")).sendKeys("Ivan Petrov");
         driver.findElement(By.cssSelector("[data-test-id='phone'] input")).sendKeys("123");
         driver.findElement(By.cssSelector("[data-test-id='agreement'] .checkbox__box")).click();
         driver.findElement(By.cssSelector("button.button")).click();
 
-        // Проверяем, что сообщение об ошибке есть только у первого поля (имя)
+        // Проверяем, что сообщение об ошибке есть у первого поля (имя)
         WebElement nameErrorMessage = driver.findElement(By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
         assertTrue(nameErrorMessage.isDisplayed());
 
-        // Проверяем, что у второго поля (телефон) нет сообщения об ошибке
-        // Ищем элемент с селектором для телефона, ожидаем, что его не существует
-        boolean phoneHasError;
-        try {
+        // Проверяем, что у второго поля (телефон) НЕТ сообщения об ошибке
+        assertThrows(org.openqa.selenium.NoSuchElementException.class, () -> {
             driver.findElement(By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
-            phoneHasError = true;
-        } catch (Exception e) {
-            phoneHasError = false;
-        }
-
-        assertFalse(phoneHasError, "У телефона не должно быть сообщения об ошибке, так как ошибка только в первом поле");
+        });
     }
 }
